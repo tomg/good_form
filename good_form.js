@@ -1,4 +1,4 @@
-/** GoodForm 0.5
+/** GoodForm 0.6
  *
  * http://github.com/cementhorses/good_form
  *
@@ -575,7 +575,9 @@ var GoodForm = {
     Name: function (input, options) {
       var name = typeof input == "string" ? input : input.name;
       options = GoodForm.Helpers.extractOptions(options);
-      if (!options.defer) GoodForm.Validate.responses = {};
+      if (!options.defer) {
+        GoodForm.Validate.responses = {}, GoodForm.Validate.callbacks = {};
+      }
       if (options.remote !== false && !GoodForm.Validate.Queue(name, options))
         var response = GoodForm.Validate.Queue(name, options); // remote: false
       if (!options.defer) return GoodForm.Validate.Run();
@@ -594,11 +596,13 @@ var GoodForm = {
         var validation = validations[i];
         if (options.form && validation.form != options.form) return;
         var error = validation.validate();
-        if (error) try {
-          GoodForm.Validate.responses[name].push(error)
-        } catch(e) {
-          GoodForm.Validate.responses[name] = new Array(error);
-        }
+        if (error) {
+          GoodForm.Validate.responses[name] =
+            (GoodForm.Validate.responses[name] || []).concat(error)
+          if (validation.onError) GoodForm.Validate.callbacks[name] =
+            (GoodForm.Validate.callbacks[name] || []).concat(validation.onError)
+        } else if (validation.onValid) GoodForm.Validate.callbacks[name] =
+            (GoodForm.Validate.callbacks[name] || []).concat(validation.onValid)
       }
       if (!GoodForm.Validate.responses[name] && type == "local")
         GoodForm.Validate.responses[name] = GoodForm.validMessages[name] ||
@@ -611,7 +615,7 @@ var GoodForm = {
      * to a specific form).
      */
     All: function (form) {
-      GoodForm.Validate.responses = {};
+      GoodForm.Validate.responses = {}, GoodForm.Validate.callbacks = {};
       for (var name in GoodForm.remote)
         GoodForm.Validate.Name(name, { defer: true, scope: form });
       for (var name in GoodForm.local)
@@ -710,12 +714,15 @@ var GoodForm = {
      */
     Run: function (options) {
       var response, options = GoodForm.Helpers.extractOptions(options);
-      if (GoodForm.Validate.ajaxQuery && !GoodForm.Validate.Remote())
+      if (GoodForm.Validate.ajaxQuery && !GoodForm.Validate.Remote()) {
         for (var name in GoodForm.Validate.responses) {
           responses = GoodForm.Validate.responses[name];
-          if (!options.silent)
-            new GoodForm.Validate.Effect(name, responses);
+          new GoodForm.Validate.Effect(name, responses);
         }
+        for (var name in GoodForm.Validate.callbacks)
+          for (var i = 0, len = GoodForm.Validate.callbacks[name].length; i < len; ++i)
+            GoodForm.Validate.callbacks[name][i]();
+      }
       GoodForm.Validate.ajaxQuery = {};
       return GoodForm.Helpers.parseResponse(responses) == "valid";
     }

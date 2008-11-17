@@ -1,0 +1,10 @@
+== 0.6
+
+  * Major
+    - re-architected validation instantiation
+    - added callbacks: onValid, onError
+
+== 0.5
+
+  * Major
+    - Birthday!
