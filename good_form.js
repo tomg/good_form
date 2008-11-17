@@ -449,21 +449,21 @@ var GoodForm = {
           var value = this.getValue();
           if (this.onlyInteger && !value.match(/^[+\-]?\d+$/) || value != parseFloat(value))
             return this.message || GoodForm.defaultErrorMessages.notANumber;
-          if (this.greaterThan && value <= this.greaterThan)
-            return this.message
-              || GoodForm.defaultErrorMessages.greaterThan.replace(/%d/g, this.greaterThan);
-          if (this.greaterThanOrEqualTo && value < this.greaterThanOrEqualTo)
-            return this.message
-              || GoodForm.defaultErrorMessages.greaterThanOrEqualTo.replace(/%d/g, this.greaterThanOrEqualTo);
-          if (this.equalTo && value != this.equalTo)
-            return this.message
-              || GoodForm.defaultErrorMessages.equalTo.replace(/%d/g, this.equalTo);
-          if (this.lessThan && value >= this.lessThan)
-            return this.message
-              || GoodForm.defaultErrorMessages.lessThan.replace(/%d/g, this.lessThan);
-          if (this.lessThanOrEqualTo && value > this.lessThanOrEqualTo)
-            return this.message
-              || GoodForm.defaultErrorMessages.lessThanOrEqualTo.replace(/%d/g, this.lessThanOrEqualTo);
+          if (this.greaterThan !== undefined && value <= this.greaterThan)
+            return this.message ||
+              GoodForm.defaultErrorMessages.greaterThan.replace(/%d/g, this.greaterThan);
+          if (this.greaterThanOrEqualTo !== undefined && value < this.greaterThanOrEqualTo)
+            return this.message ||
+              GoodForm.defaultErrorMessages.greaterThanOrEqualTo.replace(/%d/g, this.greaterThanOrEqualTo);
+          if (this.equalTo !== undefined && value != this.equalTo)
+            return this.message ||
+              GoodForm.defaultErrorMessages.equalTo.replace(/%d/g, this.equalTo);
+          if (this.lessThan !== undefined && value >= this.lessThan)
+            return this.message ||
+              GoodForm.defaultErrorMessages.lessThan.replace(/%d/g, this.lessThan);
+          if (this.lessThanOrEqualTo !== undefined && value > this.lessThanOrEqualTo)
+            return this.message ||
+              GoodForm.defaultErrorMessages.lessThanOrEqualTo.replace(/%d/g, this.lessThanOrEqualTo);
           if (this.odd && value % 2 != 1)
             return this.message || GoodForm.defaultErrorMessages.odd;
           if (this.even && value % 2 != 0)
@@ -713,18 +713,21 @@ var GoodForm = {
      * Applies queued and local validation responses.
      */
     Run: function (options) {
-      var response, options = GoodForm.Helpers.extractOptions(options);
+      var response;
+      var status = true, options = GoodForm.Helpers.extractOptions(options);
       if (GoodForm.Validate.ajaxQuery && !GoodForm.Validate.Remote()) {
         for (var name in GoodForm.Validate.responses) {
-          responses = GoodForm.Validate.responses[name];
-          new GoodForm.Validate.Effect(name, responses);
+          response = GoodForm.Validate.responses[name];
+          new GoodForm.Validate.Effect(name, response);
+          if (GoodForm.Helpers.parseResponse(response) != "valid")
+            status = false;
         }
         for (var name in GoodForm.Validate.callbacks)
           for (var i = 0, len = GoodForm.Validate.callbacks[name].length; i < len; ++i)
             GoodForm.Validate.callbacks[name][i]();
       }
       GoodForm.Validate.ajaxQuery = {};
-      return GoodForm.Helpers.parseResponse(responses) == "valid";
+      return status;
     }
   },
 
