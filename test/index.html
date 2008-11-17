@@ -80,10 +80,10 @@ new Test.Unit.Runner({
     testShouldValidateAcceptance: function () { with(this) {
         Validates.Acceptance("box");
         assert(!Validate("box"))
-        assertEqual(GoodForm.defaultErrorMessages.accepted, GoodForm.Validate.response.box);
+        assertEqual(GoodForm.defaultErrorMessages.accepted, GoodForm.Validate.responses.box);
         checkBox.checked = true;
         assert(Validate("box"));
-        assertEqual(GoodForm.validMessage, GoodForm.Validate.response.box)
+        assertEqual(GoodForm.validMessage, GoodForm.Validate.responses.box)
     }},
 
     testShouldValidateAcceptanceWithOtherValue: function () { with(this) {
@@ -98,7 +98,7 @@ new Test.Unit.Runner({
         assert(Validate(textFieldConfirmation));
         textFieldConfirmation.value = "different";
         assert(!Validate(textFieldConfirmation));
-        assertEqual(GoodForm.defaultErrorMessages.confirmation, GoodForm.Validate.response.field_confirmation);
+        assertEqual(GoodForm.defaultErrorMessages.confirmation, GoodForm.Validate.responses.field_confirmation);
     }},
 
     testShouldValidateExclusion: function () { with(this) {
@@ -106,13 +106,13 @@ new Test.Unit.Runner({
         assert(Validate(textField));
         textField.value = "A";
         assert(!Validate(textField));
-        assertEqual(GoodForm.defaultErrorMessages.exclusion, GoodForm.Validate.response.field);
+        assertEqual(GoodForm.defaultErrorMessages.exclusion, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateFormat: function () { with(this) {
         Validates.Format(textField, { "with": /monk?ey/i });
         assert(!Validate(textField));
-        assertEqual(GoodForm.defaultErrorMessages.invalid, GoodForm.Validate.response.field);
+        assertEqual(GoodForm.defaultErrorMessages.invalid, GoodForm.Validate.responses.field);
         textField.value = "money";
         assert(Validate(textField));
         textField.value = "MONKEY";
@@ -122,7 +122,7 @@ new Test.Unit.Runner({
     testShouldValidateInclusion: function () { with(this) {
         Validates.Inclusion(textField, { "in": ["X", "Y", "Z"] });
         assert(!Validate(textField));
-        assertEqual(GoodForm.defaultErrorMessages.inclusion, GoodForm.Validate.response.field);
+        assertEqual(GoodForm.defaultErrorMessages.inclusion, GoodForm.Validate.responses.field);
         textField.value = "Z";
         assert(Validate(textField));
     }},
@@ -132,7 +132,7 @@ new Test.Unit.Runner({
         Validates.Length(textField, { minimum: length });
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.tooShort.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value = "enough";
         assert(Validate(textField));
     }},
@@ -144,7 +144,7 @@ new Test.Unit.Runner({
         textField.value = "supercalifragilisticexpialidocious";
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.tooLong.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateLengthWithin: function () { with(this) {
@@ -153,12 +153,12 @@ new Test.Unit.Runner({
         var tooShort = GoodForm.defaultErrorMessages.tooShort.replace(/%d/, within[0]);
         var tooLong = GoodForm.defaultErrorMessages.tooLong.replace(/%d/, within[1]);
         assert(!Validate(textField))
-        assertEqual(tooShort, GoodForm.Validate.response.field);
+        assertEqual(tooShort, GoodForm.Validate.responses.field);
         textField.value += "James Bond"
         assert(Validate(textField))
         textField.value += ", Jr."
         assert(!Validate(textField))
-        assertEqual(tooLong, GoodForm.Validate.response.field);
+        assertEqual(tooLong, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateLengthIn: function () { with(this) {
@@ -167,12 +167,12 @@ new Test.Unit.Runner({
         var tooShort = GoodForm.defaultErrorMessages.tooShort.replace(/%d/, within[0]);
         var tooLong = GoodForm.defaultErrorMessages.tooLong.replace(/%d/, within[1]);
         assert(!Validate(textField))
-        assertEqual(tooShort, GoodForm.Validate.response.field);
+        assertEqual(tooShort, GoodForm.Validate.responses.field);
         textField.value += "James Bond"
         assert(Validate(textField))
         textField.value += ", Jr."
         assert(!Validate(textField))
-        assertEqual(tooLong, GoodForm.Validate.response.field);
+        assertEqual(tooLong, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateLengthIs: function () { with(this) {
@@ -180,12 +180,12 @@ new Test.Unit.Runner({
         Validates.Length(textField, { is: 16 });
         assert(!Validate(textField))
         var errorMessage = GoodForm.defaultErrorMessages.wrongLength.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value = "Whatever Is Fine";
         assert(Validate(textField));
         textField.value += ", Right?";
         assert(!Validate(textField));
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateArrayLength: function () { with(this) {
@@ -203,7 +203,7 @@ new Test.Unit.Runner({
         textField.value = "1.25 here, but not a number";
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.notANumber;
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value = "1.25";
         assert(Validate(textField));
     }},
@@ -222,7 +222,7 @@ new Test.Unit.Runner({
         textField.value = "21";
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.greaterThan.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value = "22";
         assert(Validate(textField));
     }},
@@ -235,7 +235,7 @@ new Test.Unit.Runner({
         textField.value = "20";
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.greaterThanOrEqualTo.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateEqualTo: function () { with(this) {
@@ -244,7 +244,7 @@ new Test.Unit.Runner({
         textField.value = "2";
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.equalTo.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value += "1";
         assert(Validate(textField));
     }},
@@ -255,7 +255,7 @@ new Test.Unit.Runner({
         textField.value = "21";
         assert(!Validate(textField))
         var errorMessage = GoodForm.defaultErrorMessages.lessThan.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value = "20";
         assert(Validate(textField));
     }},
@@ -268,7 +268,7 @@ new Test.Unit.Runner({
         textField.value = "22";
         assert(!Validate(textField))
         var errorMessage = GoodForm.defaultErrorMessages.lessThanOrEqualTo.replace(/%d/, length);
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateOdd: function () { with(this) {
@@ -278,7 +278,7 @@ new Test.Unit.Runner({
         textField.value = "2";
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.odd;
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
     }},
 
     testShouldValidateEven: function () { with(this) {
@@ -286,7 +286,7 @@ new Test.Unit.Runner({
         textField.value = "1";
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.even;
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value = "2";
         assert(Validate(textField));
     }},
@@ -295,7 +295,7 @@ new Test.Unit.Runner({
         Validates.Presence(textField);
         assert(!Validate(textField));
         var errorMessage = GoodForm.defaultErrorMessages.blank;
-        assertEqual(errorMessage, GoodForm.Validate.response.field);
+        assertEqual(errorMessage, GoodForm.Validate.responses.field);
         textField.value = "Something";
         assert(Validate(textField));
     }},
@@ -338,10 +338,9 @@ new Test.Unit.Runner({
 
     testShouldValidateMultiple: function () { with(this) {
         Validates.Presence("field", "field_confirmation");
-        var errorResponse = Validate.All();
-        assert(!errorResponse);
-        assertEqual(GoodForm.defaultErrorMessages.blank, GoodForm.Validate.response["field"]);
-        assertEqual(GoodForm.defaultErrorMessages.blank, GoodForm.Validate.response["field_confirmation"]);
+        assert(!Validate.All());
+        assertEqual(GoodForm.defaultErrorMessages.blank, GoodForm.Validate.responses.field);
+        assertEqual(GoodForm.defaultErrorMessages.blank, GoodForm.Validate.responses.field_confirmation);
     }},
 
     // TODO: Ajax testing.
