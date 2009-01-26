@@ -31,6 +31,24 @@
  *   Validates.Length("password", { within: [6, 40] });
  *
  *
+ *** Shared options
+ *
+ * All validations share the following options:
+ *
+ * - +allowBlank+ - Skip validation if attribute is blank (a string that only
+ *   contains whitespace)
+ * - +allowNull+ - Skip validation if attribute is null (or a zero-length
+ *   string)
+ * - <tt>"if"</tt> - Skip validation if condition fails
+ * - +unless+ - Skip validation if condition passes
+ *
+ * All local validations additionally share the following options:
+ *
+ * - +message+ - A custom error message
+ * - +onFail+ - A callback executed when the validation fails
+ * - +onPass+ - A callback executed when the validation passes
+ *
+ *
  *** Extension
  *
  * NOTE: To customize the appearance of validations, see Validates.Base.Effect.
@@ -56,7 +74,7 @@ var GoodForm = {
    * References all local validations defined on a page, by name.
    *
    *   Validates.Acceptance("privacy_policy");
-   *   GoodForm.local.privacy_policy; // [GoodForm.Validation object]
+   *   GoodForm.local.privacy_policy; // => [GoodForm.Validation object]
    */
   local: {},
 
@@ -100,9 +118,9 @@ var GoodForm = {
    * GoodForm.validMessages nodes can be overridden for any form element
    * name.
    *
-   *   Validate("login"); // null
+   *   Validate("login"); // => null
    *   GoodForm.validMessages["login"] = "That's a nice name!"
-   *   Validate("login"); // "That's a nice name!"
+   *   Validate("login"); // => "That's a nice name!"
    */
   validMessages: {},
 
@@ -124,12 +142,12 @@ var GoodForm = {
    *
    *   var v = new GoodForm.Validation(["field"]);
    *   v.validate = function () { return "is always invalid" };
-   *   Validate("field"); // false
-   *   GoodForm.Validate.response["field"]; // ["is always invalid"];
+   *   Validate("field"); // => false
+   *   GoodForm.Validate.response["field"]; // => ["is always invalid"];
    */
   Validation: function (arg, options) {
     this.elements = GoodForm.Helpers.getElements(arg)
-    if (!this.elements) return; // throw new Error("'" + arg + "' could not be validated");
+    if (!this.elements) throw new Error("'" + arg + "' cannot be validated");
     if (this.elements.length == 1) this.element = this.elements[0];
     this.name = this.elements[0].name, this.form = this.elements[0].form;
 
@@ -150,8 +168,8 @@ var GoodForm = {
       switch (true) {
         case (this.allowBlank && (/^\s*$/).test(value)):
         case (this.allowNull && value == ""):
-        case (this["if"] && !this["if"]()):
-        case (this.unless && this.unless()):
+        case (this["if"] && !this["if"](this.name)):
+        case (this.unless && this.unless(this.name)):
           return false;
         default:
           return true;
@@ -179,11 +197,12 @@ var GoodForm = {
    */
   Validates: {
     Base: function (args, configuration) {
-      args = [].splice.call(args, 0); // convert arguments to array
-      var options = GoodForm.Helpers.extractOptions(args);
+      for (var argsAr = [], i = 0, len = args.length; i < len; ++i) // convert arguments to array
+        argsAr.push(args[i]);
+      var options = GoodForm.Helpers.extractOptions(argsAr);
       for (var name in options) configuration[name] = options[name];
-      for (var i = 0, len = args.length; i < len; ++i) {
-        var validation = new GoodForm.Validation(args[i], configuration);
+      for (var i = 0, len = argsAr.length; i < len; ++i) {
+        var validation = new GoodForm.Validation(argsAr[i], configuration);
         if (validation.initialize) validation.initialize();
         validation.register();
       }
@@ -200,8 +219,6 @@ var GoodForm = {
      *
      * - +message+ - A custom error message (default is: "must be
      *   accepted")
-     * - +allowNull+ - Skip validation if attribute is null (default is
-     *   true).
      * - +accept+ - Specifies value that is considered accepted. The default
      *   value is a string "1", which makes it easy to relate to an HTML
      *   checkbox.
@@ -209,9 +226,9 @@ var GoodForm = {
     Acceptance: function () {
       GoodForm.Validates.Base(arguments, {
         accept: 1,
-        message: GoodForm.defaultErrorMessages["accepted"],
+        message: GoodForm.defaultErrorMessages.accepted,
         validate: function () {
-          if (this.getValue() != this.accept)
+          if (this.getValue()[0] != this.accept)
             return this.message;
         }
       });
@@ -249,12 +266,12 @@ var GoodForm = {
      *   Validates.Confirmation("password");
      *   document.getElementById("password_confirmation").value = "differ";
      *   Validate.All();
-     *   Errors["password"]; // null (returns "doesn't match confirmation" in Active Record)
-     *   Errors["password_confirmation"]; // ["doesn't match"]
+     *   Errors["password"]; // => null (returns "doesn't match confirmation" in Active Record)
+     *   Errors["password_confirmation"]; // => ["doesn't match"]
      */
     Confirmation: function () {
       GoodForm.Validates.Base(arguments, {
-        message: GoodForm.defaultErrorMessages["confirmation"],
+        message: GoodForm.defaultErrorMessages.confirmation,
         initialize: function () {
           var confirmationId = this.element.id + "_confirmation";
           this.original = this.element;
@@ -288,7 +305,7 @@ var GoodForm = {
      */
     Exclusion: function () {
       GoodForm.Validates.Base(arguments, {
-        message: GoodForm.defaultErrorMessages["exclusion"],
+        message: GoodForm.defaultErrorMessages.exclusion,
         validate: function () {
           var value = this.getValue();
           for (var i = 0, len = this["in"].length; i < len; ++i)
@@ -319,7 +336,7 @@ var GoodForm = {
      */
     Format: function () {
       GoodForm.Validates.Base(arguments, {
-        message: GoodForm.defaultErrorMessages["invalid"],
+        message: GoodForm.defaultErrorMessages.invalid,
         validate: function () {
           if (!this["with"].test(this.getValue()))
             return this.message;
@@ -339,14 +356,10 @@ var GoodForm = {
      * - +"in"+ - An array of available items
      * - +message+ - Specifies a custom error message (default is: "is not
      *   included in the list")
-     * - +allowNull+ - If set to true, skips this validation if the
-     *   attribute is null (default is: false)
-     * - +allowBlank+ - If set to true, skips this validation if the
-     *   attribute is blank (default is: false)
      */
     Inclusion: function () {
       GoodForm.Validates.Base(arguments, {
-        message: GoodForm.defaultErrorMessages["inclusion"],
+        message: GoodForm.defaultErrorMessages.inclusion,
         validate: function () {
           var value = this.getValue();
           for (var i = 0, len = this["in"].length; i < len; ++i)
@@ -376,8 +389,6 @@ var GoodForm = {
      * - +within+ - An array specifying the minimum and maximum size of the
      *   attribute
      * - +"in"+ - Synonyms (aliases) for +within+
-     * - +allowNull+ - Attribute may be null; skip validation.
-     * - +allowBlank+ - Attribute may be blank; skip validation.
      * - +tooLong+ - The error message if the attribute goes over the
      *   maximum (default is: "is too long (maximum is %d characters)")
      * - +tooShort+ - The error message if the attribute goes under the
@@ -403,14 +414,14 @@ var GoodForm = {
         validate: function () {
           var len = this.getValue().length;
           if (this.minimum == this.maximum && len != this.minimum)
-            return (this.wrongLength || this.message
-              || GoodForm.defaultErrorMessages.wrongLength).replace(/%d/g, this.minimum);
+            return (this.wrongLength || this.message ||
+              GoodForm.defaultErrorMessages.wrongLength).replace(/%d/g, this.minimum);
           if (len < this.minimum)
-            return (this.tooShort || this.message
-              || GoodForm.defaultErrorMessages.tooShort).replace(/%d/g, this.minimum);
+            return (this.tooShort || this.message ||
+              GoodForm.defaultErrorMessages.tooShort).replace(/%d/g, this.minimum);
           if (this.maximum && len > this.maximum)
-            return (this.tooLong || this.message
-              || GoodForm.defaultErrorMessages.tooLong).replace(/%d/g, this.maximum);
+            return (this.tooLong || this.message ||
+              GoodForm.defaultErrorMessages.tooLong).replace(/%d/g, this.maximum);
       }});
     },
 
@@ -428,8 +439,6 @@ var GoodForm = {
      * - +message+ - A custom error message (default is: "is not a number")
      * - +onlyInteger+ - Specifies whether the value has to be an integer,
      *   e.g. an integral value (default is false)
-     * - +allowNull+ - Skip validation if attribute is null (default is
-     *   false).
      * - +greaterThan+ - Specifies the value must be greater than the
      *   supplied value
      * - +greaterThanOrEqualTo+ - Specifies the value must be greater than
@@ -486,7 +495,7 @@ var GoodForm = {
      */
     Presence: function () {
       GoodForm.Validates.Base(arguments, {
-        message: GoodForm.defaultErrorMessages["blank"],
+        message: GoodForm.defaultErrorMessages.blank,
         validate: function () {
           if (/^\s*$/.test(this.getValue()))
             return this.message;
@@ -511,8 +520,8 @@ var GoodForm = {
      * or a custom string stating validity:
      *
      *   { email: ["is invalid"] } // Invalid
-     *   { email: null }       // Valid
-     *   { email: "OK" }       // Valid with message
+     *   { email: null }           // Valid
+     *   { email: "OK" }           // Valid with message
      *
      * Configuration options:
      *
@@ -575,11 +584,10 @@ var GoodForm = {
     Name: function (input, options) {
       var name = typeof input == "string" ? input : input.name;
       options = GoodForm.Helpers.extractOptions(options);
-      if (!options.defer) {
+      if (!options.defer)
         GoodForm.Validate.responses = {}, GoodForm.Validate.callbacks = {};
-      }
-      if (options.remote !== false && !GoodForm.Validate.Queue(name, options))
-        var response = GoodForm.Validate.Queue(name, options); // remote: false
+      if (!(options.remote !== false) || !GoodForm.Validate.Queue(name, { remote: true }))
+        var response = GoodForm.Validate.Queue(name, { remote: false });
       if (!options.defer) return GoodForm.Validate.Run();
       return response;
     },
@@ -594,15 +602,15 @@ var GoodForm = {
       if (!validations) return false;
       for (var i = 0, len = validations.length; i < len; ++i) {
         var validation = validations[i];
-        if (options.form && validation.form != options.form) return;
+        if (options.scope && validation.form != options.scope) return;
         var error = validation.validate();
-        if (error) {
+        if (error) { // Handle callbacks
           GoodForm.Validate.responses[name] =
-            (GoodForm.Validate.responses[name] || []).concat(error)
+            (GoodForm.Validate.responses[name] || []).concat(error);
           if (validation.onError) GoodForm.Validate.callbacks[name] =
-            (GoodForm.Validate.callbacks[name] || []).concat(validation.onError)
+            (GoodForm.Validate.callbacks[name] || []).concat(validation.onError);
         } else if (validation.onValid) GoodForm.Validate.callbacks[name] =
-            (GoodForm.Validate.callbacks[name] || []).concat(validation.onValid)
+            (GoodForm.Validate.callbacks[name] || []).concat(validation.onValid);
       }
       if (!GoodForm.Validate.responses[name] && type == "local")
         GoodForm.Validate.responses[name] = GoodForm.validMessages[name] ||
@@ -614,13 +622,15 @@ var GoodForm = {
      * Runs every validation on the page (can be scoped with one argument
      * to a specific form).
      */
-    All: function (form) {
+    All: function (form, options) {
+      options = GoodForm.Helpers.extractOptions(options);
       GoodForm.Validate.responses = {}, GoodForm.Validate.callbacks = {};
-      for (var name in GoodForm.remote)
-        GoodForm.Validate.Name(name, { defer: true, scope: form });
+      if (options.remote !== false)
+        for (var name in GoodForm.remote)
+          GoodForm.Validate.Name(name, { remote: true, defer: true, scope: form });
       for (var name in GoodForm.local)
-        // if (!GoodForm.Validate.responses[name])
-        GoodForm.Validate.Name(name, { defer: true, scope: form });
+        // if (!GoodForm.Validate.ajaxQuery[name])
+          GoodForm.Validate.Name(name, { remote: false, defer: true, scope: form });
 
       return GoodForm.Validate.Run();
     },
@@ -644,7 +654,6 @@ var GoodForm = {
         for (var i = 0; value = values[i]; ++i)
           params.push(name + "=" + encodeURIComponent(value));
       }
-
       if (params.length < 1) return false;
       var t, loadingState;
       try { t = new XMLHttpRequest(); } catch(e) {
@@ -655,14 +664,20 @@ var GoodForm = {
         if (t.readyState == 4 && t.status >= 200 && t.status < 300) {
           eval("var json = " + t.responseText);
           for (var name in json)
-            new GoodForm.Validate.Effect(name, json[name]);
+            if (name == "__eval__")
+              eval(json[name]);
+            else
+              new GoodForm.Validate.Effect(name, json[name]);
+          for (var name in GoodForm.Validate.responses)
+            if (!json[name])
+              new GoodForm.Validate.Effect(name, GoodForm.Validate.responses[name]);
         } else if (!loadingState)
           for (var name in GoodForm.Validate.ajaxQuery)
-            new GoodForm.Validate.Effect(name); // No response: loading.
+            new GoodForm.Validate.Effect(name); // No response: loading
       }
 
       var baseUri = location.protocol + "//" + location.host + GoodForm.remotePath;
-      t.open("GET", baseUri + "?" + params.join("&"));
+      t.open("GET", baseUri + "?" + params.join("&"), true);
       t.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
       t.send(null);
       return true;
@@ -757,6 +772,7 @@ var GoodForm = {
     },
 
     extractName: function (input) {
+      var el;
       if (input.name)
         return input.name;
       else if (el = document.getElementById(input))
@@ -766,12 +782,11 @@ var GoodForm = {
     },
 
     /*
-     * Returns a validation span for GoodForm.Validate.Effect, creating a
-     * new one if it does not exist.
+     * Returns a validation span for GoodForm.Validate.Effect, creating a new
+     * one if it does not exist.
      */
     findOrCreateValidationSpan: function(name) {
-      var id = GoodForm.Helpers.underscore(name) + "_validation";
-
+      var vEl, fEl, id = GoodForm.Helpers.underscore(name) + "_validation";
       if (vEl = document.getElementById(id)) return vEl;
       vEl = document.createElement("span");
       vEl.id = id;
@@ -790,13 +805,13 @@ var GoodForm = {
     getValuesByName: function (name, form) {
         var els = document.getElementsByName(name), values = [];
         if (form && form.constructor == String)
-            form = document.getElementById(form);
+          form = document.getElementById(form);
         for (var i = 0, len = els.length; el = els[i]; ++i)
-            if (!form || form == el.form)
-                if (el.checked || !/checkbox|radio/.test(el.type))
-                    values.push(el.value);
-                else if (len == 1)
-                    values.push(""); // For the unchecked
+          if (!form || form == el.form)
+            if (el.checked || !/checkbox|radio/.test(el.type))
+              values.push(el.value);
+            else if (len == 1)
+              values.push(""); // For the unchecked
         return values.length > 1 ? values : values[0];
     },
 
@@ -819,7 +834,7 @@ var GoodForm = {
      * underscore. The string will retain alphanumerical start and end
      * points.
      *
-     *   GoodForm.Helpers.underscore("user[email]"); // "user_email"
+     *   GoodForm.Helpers.underscore("user[email]"); // => "user_email"
      */
     underscore: function (string) {
       return string.toLowerCase().replace(/[^\w]+/g, "_").
